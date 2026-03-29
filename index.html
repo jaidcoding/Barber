@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BYND — Demo Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--black:#0a0a0a;--white:#f5f4f0;--g1:#1a1a1a;--g2:#2a2a2a;--g3:#3d3d3d;--g4:#6b6b6b;--g5:#9a9a9a;--g6:#c8c8c8;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--black);}
+#app{width:100%;height:100%;position:relative;}
+
+/* ── HUB ── */
+#hub{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--black);transition:opacity .5s,visibility .5s;z-index:10;}
+#hub.hidden{opacity:0;visibility:hidden;}
+.hub-logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,15vw,160px);color:var(--white);letter-spacing:0.15em;line-height:1;margin-bottom:8px;}
+.hub-sub{font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:13px;letter-spacing:0.35em;text-transform:uppercase;color:var(--g4);margin-bottom:72px;}
+.hub-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--g3);border:1px solid var(--g3);width:min(920px,92vw);}
+.hub-tile{background:var(--g1);padding:32px 24px 28px;cursor:pointer;transition:background .2s;display:flex;flex-direction:column;gap:10px;border:none;text-align:left;position:relative;}
+.hub-tile:hover{background:var(--g2);}
+.hub-num{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.3em;color:var(--g4);}
+.hub-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.1em;color:var(--white);line-height:1.1;}
+.hub-desc{font-family:'Barlow',sans-serif;font-size:12px;color:var(--g5);font-weight:300;line-height:1.5;margin-top:4px;}
+.hub-arr{position:absolute;bottom:20px;right:20px;font-size:14px;color:var(--g4);transition:transform .2s,color .2s;}
+.hub-tile:hover .hub-arr{transform:translate(2px,-2px);color:var(--white);}
+
+/* ── FRAME ── */
+#frame{position:absolute;inset:0;background:var(--black);opacity:0;visibility:hidden;transition:opacity .5s,visibility .5s;z-index:20;}
+#frame.visible{opacity:1;visibility:visible;}
+#fbar{position:fixed;top:0;left:0;right:0;height:44px;background:rgba(10,10,10,0.95);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100;border-bottom:1px solid var(--g2);}
+#back-btn{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:var(--g5);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;transition:color .2s;}
+#back-btn:hover{color:var(--white);}
+#back-btn svg{transition:transform .2s;}
+#back-btn:hover svg{transform:translateX(-3px);}
+#ftitle{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:0.25em;color:var(--g4);}
+#fcontent{position:absolute;inset:0;padding-top:44px;overflow:hidden;}
+
+/* ══════════════════════════════════
+   SITE 1 — THE REVEAL
+   Full-screen sections, scroll-driven.
+   Each product: huge bg number, bottle
+   scales up, name←  →copy split reveal.
+   ══════════════════════════════════ */
+#site1{position:absolute;inset:0;display:none;background:#050505;overflow-y:scroll;}
+#site1.active{display:block;}
+
+/* Intro panel */
+.r-intro{
+  height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  position:relative;
+}
+.r-intro-logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(100px,18vw,200px);
+  color:var(--white);letter-spacing:0.15em;line-height:1;
+}
+.r-intro-sub{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:0.5em;text-transform:uppercase;
+  color:var(--g4);margin-top:14px;
+}
+.r-intro-hint{
+  position:absolute;bottom:52px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px;letter-spacing:0.4em;text-transform:uppercase;
+  color:var(--g3);display:flex;align-items:center;gap:12px;
+  animation:hpulse 2.2s ease-in-out infinite;
+}
+@keyframes hpulse{0%,100%{opacity:.3;}50%{opacity:.9;}}
+.r-hline{width:36px;height:1px;background:var(--g3);}
+
+/* Product section — 100vh sticky reveal */
+.r-section{
+  position:relative;
+  height:200vh; /* 2x for scroll room */
+}
+.r-sticky{
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Giant background product number */
+.r-bg-num{
+  position:absolute;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(200px,38vw,480px);
+  color:#111;
+  letter-spacing:0.02em;
+  line-height:1;
+  user-select:none;
+  pointer-events:none;
+  z-index:0;
+  will-change:opacity,transform;
+}
+
+/* Horizontal divider line that wipes in */
+.r-divider{
+  position:absolute;
+  top:50%;left:0;right:0;
+  height:1px;
+  background:var(--g2);
+  transform:scaleX(0);
+  transform-origin:left center;
+  will-change:transform;
+  z-index:1;
+}
+
+/* Bottle — center, scales up */
+.r-bottle{
+  position:absolute;
+  z-index:3;
+  display:flex;align-items:center;justify-content:center;
+  will-change:transform,opacity;
+}
+
+/* Product name — left side, slides left */
+.r-name-wrap{
+  position:absolute;
+  left:0;
+  top:50%;transform:translateY(-50%);
+  width:42%;
+  padding-left:7vw;
+  z-index:4;
+  will-change:transform,opacity;
+}
+.r-prod-num{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px;letter-spacing:0.5em;text-transform:uppercase;
+  color:var(--g4);margin-bottom:16px;
+}
+.r-prod-name{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(52px,7vw,88px);
+  letter-spacing:0.05em;color:var(--white);line-height:0.9;
+}
+
+/* Copy — right side, slides right */
+.r-copy-wrap{
+  position:absolute;
+  right:0;
+  top:50%;transform:translateY(-50%);
+  width:40%;
+  padding-right:7vw;
+  z-index:4;
+  will-change:transform,opacity;
+  display:flex;flex-direction:column;gap:16px;
+}
+.r-prod-desc{
+  font-family:'Barlow',sans-serif;
+  font-size:14px;color:var(--g5);
+  font-weight:300;line-height:1.85;
+  max-width:280px;
+}
+.r-prod-price{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:18px;letter-spacing:0.12em;
+  color:var(--g6);font-weight:600;
+}
+
+/* Progress bar */
+#r-bar{
+  position:fixed;right:0;top:44px;bottom:0;
+  width:2px;background:var(--g2);z-index:50;
+}
+#r-bar-fill{
+  width:100%;background:var(--white);
+  transition:height .1s;height:0%;
+}
+
+/* ══════════════════════════════════
+   SITE 2 — EDITORIAL (all black)
+   ══════════════════════════════════ */
+#site2{position:absolute;inset:0;display:none;background:#080808;overflow-y:scroll;color:var(--white);}
+#site2.active{display:block;}
+
+.e2-nav{position:sticky;top:0;z-index:50;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;border-bottom:1px solid #1e1e1e;background:rgba(8,8,8,0.97);backdrop-filter:blur(8px);}
+.e2-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.25em;color:var(--white);}
+.e2-nav-links{display:flex;gap:36px;}
+.e2-nav-link{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:var(--g5);cursor:pointer;transition:color .2s;}
+.e2-nav-link:hover{color:var(--white);}
+.e2-nav-right{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.35em;color:var(--g4);}
+
+/* Hero — clean, no watermark */
+.e2-hero{
+  min-height:calc(100vh - 56px);
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:0 64px 72px;
+  border-bottom:1px solid #1e1e1e;
+  position:relative;
+}
+/* Thin top rule */
+.e2-hero::before{
+  content:'';
+  position:absolute;
+  top:48px;left:64px;right:64px;
+  height:1px;
+  background:linear-gradient(to right,#1e1e1e,transparent);
+}
+.e2-hero-eyebrow{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px;letter-spacing:0.5em;text-transform:uppercase;
+  color:var(--g4);margin-bottom:24px;
+}
+/* Two-column bottom row */
+.e2-hero-bottom{
+  display:grid;
+  grid-template-columns:1fr 480px;
+  align-items:flex-end;
+  gap:64px;
+}
+.e2-hero-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(72px,11vw,148px);
+  letter-spacing:0.04em;line-height:0.88;
+  color:var(--white);
+}
+.e2-hero-right{display:flex;flex-direction:column;gap:28px;padding-bottom:6px;}
+.e2-hero-body{font-family:'Barlow',sans-serif;font-size:14px;color:var(--g5);font-weight:300;line-height:1.9;max-width:380px;}
+.e2-hero-cta{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.45em;text-transform:uppercase;color:var(--white);background:none;border:1px solid var(--g3);padding:14px 32px;cursor:pointer;width:fit-content;transition:all .25s;}
+.e2-hero-cta:hover{background:var(--white);color:#080808;}
+
+/* Product rows */
+.e2-prod{display:grid;grid-template-columns:1fr 1fr;min-height:88vh;border-bottom:1px solid #1e1e1e;}
+.e2-prod.flip .e2-stage{order:2;}
+.e2-prod.flip .e2-copy{order:1;}
+.e2-stage{background:#0d0d0d;display:flex;align-items:center;justify-content:center;border-right:1px solid #1e1e1e;position:relative;overflow:hidden;padding:80px;}
+.e2-prod.flip .e2-stage{border-right:none;border-left:1px solid #1e1e1e;}
+.e2-stage::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:320px;height:320px;background:radial-gradient(ellipse,rgba(255,255,255,0.03) 0%,transparent 70%);pointer-events:none;}
+.e2-stage::after{content:'';position:absolute;bottom:56px;left:18%;right:18%;height:1px;background:linear-gradient(to right,transparent,#222,transparent);}
+.e2-copy{padding:72px 64px;display:flex;flex-direction:column;justify-content:center;gap:0;}
+.e2-prod-num{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.5em;text-transform:uppercase;color:var(--g4);margin-bottom:24px;display:flex;align-items:center;gap:16px;}
+.e2-prod-num::after{content:'';flex:1;height:1px;background:#1e1e1e;}
+.e2-prod-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,6vw,80px);letter-spacing:0.04em;color:var(--white);line-height:0.9;margin-bottom:24px;}
+.e2-prod-desc{font-family:'Barlow',sans-serif;font-size:13px;color:var(--g5);font-weight:300;line-height:1.9;max-width:280px;margin-bottom:32px;}
+.e2-prod-price{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:0.06em;color:var(--white);}
+.e2-prod-size{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.35em;color:var(--g4);margin-top:4px;}
+.e2-manifesto{padding:96px 64px;border-bottom:1px solid #1e1e1e;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;}
+.e2-manifesto-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,6.5vw,80px);letter-spacing:0.04em;color:var(--white);line-height:0.92;}
+.e2-manifesto-body{font-family:'Barlow',sans-serif;font-size:14px;color:var(--g5);font-weight:300;line-height:2;max-width:400px;}
+.e2-stats{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #1e1e1e;}
+.e2-stat{padding:52px 40px;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;gap:10px;}
+.e2-stat:last-child{border-right:none;}
+.e2-stat-val{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:0.05em;color:var(--white);}
+.e2-stat-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:var(--g4);}
+.e2-footer{padding:64px;display:flex;align-items:flex-start;justify-content:space-between;}
+.e2-footer-logo{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:0.15em;color:var(--g3);}
+.e2-footer-copy{font-family:'Barlow',sans-serif;font-size:11px;color:var(--g4);margin-top:12px;}
+.e2-footer-col{display:flex;flex-direction:column;gap:10px;}
+.e2-footer-col-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:var(--g4);margin-bottom:4px;}
+.e2-footer-link{font-family:'Barlow',sans-serif;font-size:13px;color:var(--g4);font-weight:300;cursor:pointer;transition:color .2s;}
+.e2-footer-link:hover{color:var(--white);}
+
+/* ══════════════════════════════════
+   SITE 3 — DROP (free scroll)
+   ══════════════════════════════════ */
+#site3{position:absolute;inset:0;display:none;background:var(--black);overflow-y:scroll;}
+#site3.active{display:block;}
+.s3-slide{
+  height:calc(100vh - 44px);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  position:relative;
+  border-bottom:1px solid #111;
+}
+.s3-intro-logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(100px,20vw,220px);letter-spacing:0.15em;color:var(--white);line-height:1;}
+.s3-isub{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:0.5em;text-transform:uppercase;color:var(--g4);margin-top:16px;}
+.s3-hint{position:absolute;bottom:48px;font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:var(--g3);display:flex;align-items:center;gap:12px;animation:hpulse 2.2s ease-in-out infinite;}
+.s3-hline{width:40px;height:1px;background:var(--g3);}
+.s3-svg-wrap svg{animation:flt 4s ease-in-out infinite;}
+@keyframes flt{0%,100%{transform:translateY(0);}50%{transform:translateY(-18px);}}
+.s3-pname{font-family:'Bebas Neue',sans-serif;font-size:clamp(56px,9vw,110px);letter-spacing:0.12em;color:var(--white);text-align:center;line-height:0.95;margin-top:28px;}
+.s3-line{width:1px;height:52px;background:var(--g3);margin:24px auto;}
+.s3-pdesc{font-family:'Barlow',sans-serif;font-size:14px;color:var(--g4);font-weight:300;text-align:center;max-width:260px;line-height:1.85;}
+.s3-cta{margin-top:28px;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.45em;text-transform:uppercase;color:var(--white);background:none;border:1px solid var(--g3);padding:16px 44px;cursor:pointer;transition:all .25s;}
+.s3-cta:hover{background:var(--white);color:var(--black);border-color:var(--white);}
+#s3-bar{position:fixed;bottom:0;left:0;height:2px;background:var(--white);z-index:50;width:0%;}
+#s3-ct{position:fixed;top:60px;right:40px;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.25em;color:var(--g4);z-index:50;}
+
+/* ══════════════════════════════════
+   SITE 4 — SHOP (unchanged)
+   ══════════════════════════════════ */
+#site4{position:absolute;inset:0;display:none;background:var(--white);overflow-y:scroll;}
+#site4.active{display:block;}
+#s4-hdr{position:sticky;top:0;z-index:50;background:rgba(245,244,240,0.97);backdrop-filter:blur(12px);border-bottom:1px solid #ddd;padding:0 56px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.s4-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.2em;color:var(--black);}
+.s4-nav{display:flex;gap:32px;}
+.s4-nav a{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.35em;text-transform:uppercase;color:#999;text-decoration:none;transition:color .2s;}
+.s4-nav a:hover{color:var(--black);}
+.s4-cart{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--black);cursor:pointer;display:flex;align-items:center;gap:10px;background:none;border:1px solid #ccc;padding:8px 20px;transition:all .2s;}
+.s4-cart:hover{background:var(--black);color:var(--white);border-color:var(--black);}
+.s4-cbadge{background:var(--black);color:var(--white);font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.s4-hero{display:grid;grid-template-columns:1fr 1fr;min-height:84vh;}
+.s4-hl{background:var(--black);display:flex;flex-direction:column;justify-content:flex-end;padding:72px 64px;}
+.s4-hr{background:#0a0a0a;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.s4-hr::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 59px,#141414 59px,#141414 60px),repeating-linear-gradient(90deg,transparent,transparent 59px,#141414 59px,#141414 60px);opacity:1;z-index:1;}
+.s4-hr-word{font-family:'Bebas Neue',sans-serif;font-size:clamp(120px,18vw,240px);letter-spacing:0.08em;color:#1a1a1a;line-height:1;user-select:none;position:absolute;writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);z-index:2;}
+.s4-eye{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.5em;text-transform:uppercase;color:var(--g4);margin-bottom:24px;}
+.s4-htitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(64px,10vw,128px);letter-spacing:0.06em;color:var(--white);line-height:0.9;margin-bottom:32px;}
+.s4-hbody{font-family:'Barlow',sans-serif;font-size:14px;color:var(--g5);font-weight:300;line-height:1.85;max-width:320px;margin-bottom:40px;}
+.s4-hcta{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.45em;text-transform:uppercase;color:var(--white);background:none;border:1px solid var(--g3);padding:16px 40px;cursor:pointer;display:inline-block;transition:all .2s;width:fit-content;}
+.s4-hcta:hover{background:var(--white);color:var(--black);border-color:var(--white);}
+.s4-slabel{padding:24px 56px;border-bottom:1px solid #ddd;display:flex;align-items:center;justify-content:space-between;}
+.s4-stitle{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.1em;color:var(--black);}
+.s4-scount{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.3em;color:#bbb;}
+.s4-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#ddd;border-bottom:1px solid #ddd;}
+.s4-item{background:var(--white);display:flex;cursor:pointer;transition:background .25s;}
+.s4-item:hover{background:#f9f8f4;}
+.s4-iimg{width:260px;flex-shrink:0;border-right:1px solid #eee;display:flex;align-items:center;justify-content:center;padding:40px;background:#f5f4f0;transition:background .3s;}
+.s4-item:hover .s4-iimg{background:#eeeee8;}
+.s4-iimg svg{transition:transform .4s;}
+.s4-item:hover .s4-iimg svg{transform:scale(1.07) translateY(-4px);}
+.s4-ibody{padding:40px 44px;display:flex;flex-direction:column;flex:1;}
+.s4-icat{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.45em;text-transform:uppercase;color:#bbb;margin-bottom:12px;}
+.s4-iname{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:0.08em;color:var(--black);margin-bottom:12px;line-height:1;}
+.s4-idesc{font-family:'Barlow',sans-serif;font-size:13px;color:#777;font-weight:300;line-height:1.85;flex:1;max-width:340px;}
+.s4-ifoot{display:flex;align-items:center;justify-content:space-between;margin-top:28px;padding-top:20px;border-top:1px solid #eee;}
+.s4-iprice{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:0.06em;color:var(--black);}
+.s4-isize{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.25em;color:#aaa;margin-top:2px;}
+.s4-add{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:var(--black);background:none;border:1px solid #ccc;padding:12px 24px;cursor:pointer;transition:all .2s;}
+.s4-add:hover{background:var(--black);color:var(--white);border-color:var(--black);}
+.s4-add.added{background:var(--black);border-color:var(--black);color:var(--white);}
+.s4-bstrip{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #ddd;}
+.s4-bc{padding:56px 48px;border-right:1px solid #ddd;display:flex;flex-direction:column;gap:12px;}
+.s4-bc:last-child{border-right:none;}
+.s4-bnum{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:0.05em;color:#e8e7e2;}
+.s4-blab{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.35em;text-transform:uppercase;color:#aaa;}
+.s4-bval{font-family:'Barlow',sans-serif;font-size:13px;color:#777;font-weight:300;line-height:1.7;max-width:220px;}
+.s4-footer{background:var(--black);padding:64px 56px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;align-items:start;}
+.s4-flogo{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:0.15em;color:var(--white);}
+.s4-ftag{font-family:'Barlow',sans-serif;font-size:12px;color:var(--g4);font-weight:300;line-height:1.8;margin-top:12px;max-width:200px;}
+.s4-fct{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:0.4em;text-transform:uppercase;color:var(--g4);margin-bottom:16px;}
+.s4-flinks{display:flex;flex-direction:column;gap:10px;}
+.s4-flink{font-family:'Barlow',sans-serif;font-size:13px;color:var(--g3);font-weight:300;cursor:pointer;transition:color .2s;}
+.s4-flink:hover{color:var(--white);}
+.s4-fbot{border-top:1px solid var(--g2);margin:0 56px;padding:24px 0;display:flex;justify-content:space-between;}
+.s4-fcopy{font-family:'Barlow',sans-serif;font-size:11px;color:var(--g4);}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HUB -->
+<div id="hub">
+  <div class="hub-logo">BYND</div>
+  <div class="hub-sub">Select a Demo</div>
+  <div class="hub-grid">
+    <button class="hub-tile" onclick="openSite(1)"><div class="hub-num">01</div><div class="hub-name">The Reveal</div><div class="hub-desc">Scroll-driven full-screen reveal</div><div class="hub-arr">↗</div></button>
+    <button class="hub-tile" onclick="openSite(2)"><div class="hub-num">02</div><div class="hub-name">Editorial</div><div class="hub-desc">All black studio luxury</div><div class="hub-arr">↗</div></button>
+    <button class="hub-tile" onclick="openSite(3)"><div class="hub-num">03</div><div class="hub-name">Drop</div><div class="hub-desc">Free scroll product slideshow</div><div class="hub-arr">↗</div></button>
+    <button class="hub-tile" onclick="openSite(4)"><div class="hub-num">04</div><div class="hub-name">Shop</div><div class="hub-desc">Clean boutique storefront</div><div class="hub-arr">↗</div></button>
+  </div>
+</div>
+
+<!-- FRAME -->
+<div id="frame">
+  <div id="fbar">
+    <button id="back-btn" onclick="closeFrame()"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Back to Hub</button>
+    <div id="ftitle">BYND</div>
+    <div style="width:100px"></div>
+  </div>
+  <div id="fcontent">
+
+    <!-- ══ SITE 1: THE REVEAL ══ -->
+    <div id="site1">
+      <div id="r-bar"><div id="r-bar-fill"></div></div>
+
+      <!-- Intro -->
+      <div class="r-intro">
+        <div class="r-intro-logo">BYND</div>
+        <div class="r-intro-sub">Premium Grooming — Est. 2026</div>
+        <div class="r-intro-hint"><div class="r-hline"></div>Scroll to reveal<div class="r-hline"></div></div>
+      </div>
+
+      <!-- Product 1: Sea Salt Spray -->
+      <div class="r-section" id="rs1">
+        <div class="r-sticky">
+          <div class="r-bg-num" id="rn1">01</div>
+          <div class="r-divider" id="rd1"></div>
+          <div class="r-bottle" id="rb1">
+            <svg width="210" height="380" viewBox="0 0 160 280" fill="none">
+              <path d="M62 60L62 40Q62 30 72 30L110 30Q120 30 120 40L120 55" stroke="#c8c8c8" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <rect x="105" y="24" width="30" height="10" rx="5" fill="#9a9a9a"/>
+              <path d="M90 55Q100 55 105 65Q110 72 100 72L85 70Q76 68 76 60Z" fill="#6b6b6b"/>
+              <rect x="52" y="60" width="76" height="190" rx="10" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/>
+              <rect x="58" y="52" width="64" height="14" rx="6" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/>
+              <rect x="58" y="100" width="64" height="80" rx="4" fill="#0a0a0a" stroke="#3d3d3d" stroke-width="1"/>
+              <text x="90" y="134" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text>
+              <text x="90" y="150" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2" fill="#6b6b6b">SEA SALT SPRAY</text>
+              <line x1="90" y1="52" x2="90" y2="60" stroke="#3d3d3d" stroke-width="3"/>
+              <rect x="52" y="242" width="76" height="8" rx="4" fill="#111"/>
+              <rect x="56" y="65" width="8" height="160" rx="4" fill="#2a2a2a" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="r-name-wrap" id="rnw1">
+            <div class="r-prod-num">Hair Care — 01</div>
+            <div class="r-prod-name">Sea Salt<br>Spray</div>
+          </div>
+          <div class="r-copy-wrap" id="rcw1">
+            <div class="r-prod-desc">Atlantic sea minerals for that sun-bleached, lived-in wave. Effortless texture and definition—without the crunch.</div>
+            <div class="r-prod-price">$28 — 200ml</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 2: Curl Cream -->
+      <div class="r-section" id="rs2">
+        <div class="r-sticky">
+          <div class="r-bg-num" id="rn2">02</div>
+          <div class="r-divider" id="rd2"></div>
+          <div class="r-bottle" id="rb2">
+            <svg width="195" height="400" viewBox="0 0 140 300" fill="none">
+              <rect x="58" y="10" width="24" height="50" rx="12" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/>
+              <rect x="46" y="24" width="48" height="16" rx="8" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/>
+              <rect x="88" y="28" width="22" height="8" rx="4" fill="#6b6b6b"/>
+              <rect x="50" y="56" width="40" height="16" rx="6" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/>
+              <rect x="28" y="68" width="84" height="208" rx="14" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/>
+              <rect x="34" y="110" width="72" height="90" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/>
+              <text x="70" y="148" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text>
+              <text x="70" y="166" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="7" letter-spacing="2" fill="#6b6b6b">CURL CREAM</text>
+              <rect x="32" y="73" width="8" height="180" rx="4" fill="#2a2a2a" opacity="0.5"/>
+              <rect x="28" y="268" width="84" height="8" rx="4" fill="#111"/>
+            </svg>
+          </div>
+          <div class="r-name-wrap" id="rnw2">
+            <div class="r-prod-num">Curl Care — 02</div>
+            <div class="r-prod-name">Curl<br>Cream</div>
+          </div>
+          <div class="r-copy-wrap" id="rcw2">
+            <div class="r-prod-desc">Defines, hydrates, and holds. Designed for every curl pattern from loose waves to tight coils. No frizz. No flaking.</div>
+            <div class="r-prod-price">$32 — 150ml</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 3: Styling Clay -->
+      <div class="r-section" id="rs3">
+        <div class="r-sticky">
+          <div class="r-bg-num" id="rn3">03</div>
+          <div class="r-divider" id="rd3"></div>
+          <div class="r-bottle" id="rb3">
+            <svg width="300" height="230" viewBox="0 0 200 160" fill="none">
+              <ellipse cx="100" cy="45" rx="85" ry="22" fill="#1a1a1a" stroke="#c8c8c8" stroke-width="1.5"/>
+              <path d="M15 45Q15 60 100 60Q185 60 185 45" fill="#111" stroke="#c8c8c8" stroke-width="1.5"/>
+              <ellipse cx="100" cy="45" rx="75" ry="17" fill="#0d0d0d" stroke="#2a2a2a" stroke-width="1"/>
+              <text x="100" y="49" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="20" letter-spacing="6" fill="#c8c8c8">BYND</text>
+              <path d="M15 45L15 100Q15 130 100 130Q185 130 185 100L185 45" fill="#141414" stroke="#c8c8c8" stroke-width="1.5"/>
+              <ellipse cx="100" cy="110" rx="85" ry="20" fill="#0f0f0f" stroke="#2a2a2a" stroke-width="1"/>
+              <text x="100" y="95" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" letter-spacing="3" fill="#6b6b6b">MATTE STYLING CLAY</text>
+              <path d="M25 50Q28 80 25 105" stroke="#2a2a2a" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+            </svg>
+          </div>
+          <div class="r-name-wrap" id="rnw3">
+            <div class="r-prod-num">Styling — 03</div>
+            <div class="r-prod-name">Matte<br>Styling<br>Clay</div>
+          </div>
+          <div class="r-copy-wrap" id="rcw3">
+            <div class="r-prod-desc">Strong hold. Zero shine. A workable, reworkable clay built for the modern cut—textured, natural, always fresh.</div>
+            <div class="r-prod-price">$26 — 100g</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 4: Cologne -->
+      <div class="r-section" id="rs4">
+        <div class="r-sticky">
+          <div class="r-bg-num" id="rn4">04</div>
+          <div class="r-divider" id="rd4"></div>
+          <div class="r-bottle" id="rb4">
+            <svg width="200" height="390" viewBox="0 0 140 260" fill="none">
+              <rect x="52" y="6" width="36" height="28" rx="6" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/>
+              <rect x="62" y="30" width="16" height="22" rx="4" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/>
+              <rect x="48" y="50" width="44" height="12" rx="4" fill="#3d3d3d" stroke="#6b6b6b" stroke-width="0.5"/>
+              <rect x="28" y="60" width="84" height="178" rx="8" fill="#141414" stroke="#3d3d3d" stroke-width="1.5"/>
+              <rect x="34" y="66" width="72" height="166" rx="5" fill="none" stroke="#1f1f1f" stroke-width="1"/>
+              <rect x="34" y="100" width="72" height="90" rx="3" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/>
+              <text x="70" y="138" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" letter-spacing="6" fill="#c8c8c8">BYND</text>
+              <text x="70" y="157" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#6b6b6b">AFTERSHAVE</text>
+              <text x="70" y="172" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#6b6b6b">COLOGNE</text>
+              <rect x="32" y="65" width="6" height="170" rx="3" fill="#1f1f1f" opacity="0.6"/>
+              <rect x="28" y="230" width="84" height="8" rx="3" fill="#0f0f0f"/>
+            </svg>
+          </div>
+          <div class="r-name-wrap" id="rnw4">
+            <div class="r-prod-num">Grooming — 04</div>
+            <div class="r-prod-name">Aftershave<br>Cologne</div>
+          </div>
+          <div class="r-copy-wrap" id="rcw4">
+            <div class="r-prod-desc">Cedar, black pepper, vetiver. Clean. Sharp. A dry-down that lingers—for the man who keeps it simple.</div>
+            <div class="r-prod-price">$58 — 50ml</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /site1 -->
+
+    <!-- ══ SITE 2: EDITORIAL ══ -->
+    <div id="site2">
+      <div class="e2-nav">
+        <div class="e2-logo">BYND</div>
+        <div class="e2-nav-links">
+          <span class="e2-nav-link">Products</span>
+          <span class="e2-nav-link">About</span>
+          <span class="e2-nav-link">Stockists</span>
+        </div>
+        <div class="e2-nav-right">Est. 2026</div>
+      </div>
+
+      <div class="e2-hero">
+        <div class="e2-hero-eyebrow">Premium Barber Grooming — Est. 2026</div>
+        <div class="e2-hero-bottom">
+          <div class="e2-hero-title">BYND<br>The<br>Line.</div>
+          <div class="e2-hero-right">
+            <div class="e2-hero-body">Four products. No noise. Built on the shop floor by someone who knows what works—and what doesn't. Clean formulas. Real performance. Nothing you don't need.</div>
+            <div class="e2-hero-cta">Explore the Collection</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 1 -->
+      <div class="e2-prod">
+        <div class="e2-stage">
+          <svg width="150" height="290" viewBox="0 0 160 280" fill="none">
+            <path d="M62 60L62 40Q62 30 72 30L110 30Q120 30 120 40L120 55" stroke="#444" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <rect x="105" y="24" width="30" height="10" rx="5" fill="#333"/>
+            <path d="M90 55Q100 55 105 65Q110 72 100 72L85 70Q76 68 76 60Z" fill="#333"/>
+            <rect x="52" y="60" width="76" height="190" rx="10" fill="#161616" stroke="#2a2a2a" stroke-width="1.5"/>
+            <rect x="58" y="52" width="64" height="14" rx="6" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1"/>
+            <rect x="58" y="100" width="64" height="80" rx="4" fill="#0e0e0e" stroke="#252525" stroke-width="1"/>
+            <text x="90" y="134" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text>
+            <text x="90" y="150" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2" fill="#555">SEA SALT SPRAY</text>
+            <line x1="90" y1="52" x2="90" y2="60" stroke="#333" stroke-width="3"/>
+            <rect x="52" y="242" width="76" height="8" rx="4" fill="#111"/>
+            <rect x="56" y="65" width="7" height="160" rx="3" fill="#1f1f1f" opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="e2-copy">
+          <div class="e2-prod-num">01 / 04</div>
+          <div class="e2-prod-name">Sea Salt<br>Spray</div>
+          <div class="e2-prod-desc">Atlantic sea minerals for effortless texture and wave definition. Lightweight, non-sticky hold for all hair types. That sun-bleached look without the crunch.</div>
+          <div class="e2-prod-price">$28</div>
+          <div class="e2-prod-size">200ml</div>
+        </div>
+      </div>
+
+      <!-- Product 2 -->
+      <div class="e2-prod flip">
+        <div class="e2-stage">
+          <svg width="140" height="310" viewBox="0 0 140 300" fill="none">
+            <rect x="58" y="10" width="24" height="50" rx="12" fill="#1f1f1f" stroke="#2a2a2a" stroke-width="1"/>
+            <rect x="46" y="24" width="48" height="16" rx="8" fill="#161616" stroke="#2a2a2a" stroke-width="1"/>
+            <rect x="88" y="28" width="22" height="8" rx="4" fill="#333"/>
+            <rect x="50" y="56" width="40" height="16" rx="6" fill="#161616" stroke="#2a2a2a" stroke-width="1"/>
+            <rect x="28" y="68" width="84" height="208" rx="14" fill="#161616" stroke="#2a2a2a" stroke-width="1.5"/>
+            <rect x="34" y="110" width="72" height="90" rx="4" fill="#0e0e0e" stroke="#222" stroke-width="1"/>
+            <text x="70" y="148" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text>
+            <text x="70" y="166" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="7" letter-spacing="2" fill="#555">CURL CREAM</text>
+            <rect x="32" y="73" width="7" height="180" rx="3" fill="#1f1f1f" opacity="0.6"/>
+            <rect x="28" y="268" width="84" height="8" rx="4" fill="#111"/>
+          </svg>
+        </div>
+        <div class="e2-copy">
+          <div class="e2-prod-num">02 / 04</div>
+          <div class="e2-prod-name">Curl<br>Cream</div>
+          <div class="e2-prod-desc">Defines every curl pattern from loose wave to tight coil. No frizz, no flaking—smooth, hydrated curls with flexible hold that moves with you all day.</div>
+          <div class="e2-prod-price">$32</div>
+          <div class="e2-prod-size">150ml</div>
+        </div>
+      </div>
+
+      <!-- Product 3 -->
+      <div class="e2-prod">
+        <div class="e2-stage">
+          <svg width="240" height="185" viewBox="0 0 200 160" fill="none">
+            <ellipse cx="100" cy="45" rx="85" ry="22" fill="#161616" stroke="#2a2a2a" stroke-width="1.5"/>
+            <path d="M15 45Q15 60 100 60Q185 60 185 45" fill="#111" stroke="#2a2a2a" stroke-width="1.5"/>
+            <ellipse cx="100" cy="45" rx="75" ry="17" fill="#0e0e0e" stroke="#222" stroke-width="1"/>
+            <text x="100" y="49" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="20" letter-spacing="6" fill="#c8c8c8">BYND</text>
+            <path d="M15 45L15 100Q15 130 100 130Q185 130 185 100L185 45" fill="#161616" stroke="#2a2a2a" stroke-width="1.5"/>
+            <ellipse cx="100" cy="110" rx="85" ry="20" fill="#111" stroke="#222" stroke-width="1"/>
+            <text x="100" y="95" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" letter-spacing="3" fill="#555">MATTE STYLING CLAY</text>
+            <path d="M25 50Q28 80 25 105" stroke="#222" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="e2-copy">
+          <div class="e2-prod-num">03 / 04</div>
+          <div class="e2-prod-name">Matte<br>Styling<br>Clay</div>
+          <div class="e2-prod-desc">Strong hold, zero shine. Reworkable throughout the day without drying out or breaking down. Builds texture without stiffness—natural finish, all day hold.</div>
+          <div class="e2-prod-price">$26</div>
+          <div class="e2-prod-size">100g</div>
+        </div>
+      </div>
+
+      <!-- Product 4 -->
+      <div class="e2-prod flip">
+        <div class="e2-stage">
+          <svg width="140" height="300" viewBox="0 0 140 260" fill="none">
+            <rect x="52" y="6" width="36" height="28" rx="6" fill="#1f1f1f" stroke="#2a2a2a" stroke-width="1"/>
+            <rect x="62" y="30" width="16" height="22" rx="4" fill="#161616" stroke="#2a2a2a" stroke-width="1"/>
+            <rect x="48" y="50" width="44" height="12" rx="4" fill="#252525" stroke="#333" stroke-width="0.5"/>
+            <rect x="28" y="60" width="84" height="178" rx="8" fill="#161616" stroke="#2a2a2a" stroke-width="1.5"/>
+            <rect x="34" y="66" width="72" height="166" rx="5" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+            <rect x="34" y="100" width="72" height="90" rx="3" fill="#0e0e0e" stroke="#1f1f1f" stroke-width="1"/>
+            <text x="70" y="138" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" letter-spacing="6" fill="#c8c8c8">BYND</text>
+            <text x="70" y="157" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#555">AFTERSHAVE</text>
+            <text x="70" y="172" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#555">COLOGNE</text>
+            <rect x="32" y="65" width="5" height="170" rx="2" fill="#161616" opacity="0.8"/>
+            <rect x="28" y="230" width="84" height="8" rx="3" fill="#111"/>
+          </svg>
+        </div>
+        <div class="e2-copy">
+          <div class="e2-prod-num">04 / 04</div>
+          <div class="e2-prod-name">Aftershave<br>Cologne</div>
+          <div class="e2-prod-desc">Cedar, black pepper, and vetiver. Soothes skin after a close shave while leaving a clean, sharp, long-lasting scent. The finishing move.</div>
+          <div class="e2-prod-price">$58</div>
+          <div class="e2-prod-size">50ml</div>
+        </div>
+      </div>
+
+      <div class="e2-manifesto">
+        <div class="e2-manifesto-title">Built on<br>the floor.<br>Not in<br>a lab.</div>
+        <div class="e2-manifesto-body">BYND started in the barber shop. Every formula was tested on real clients, refined through real sessions, and approved by the people who use product every single day. No gimmicks. No influencer launch. Just four things that actually work—and nothing else.</div>
+      </div>
+
+      <div class="e2-stats">
+        <div class="e2-stat"><div class="e2-stat-val">04</div><div class="e2-stat-label">Products</div></div>
+        <div class="e2-stat"><div class="e2-stat-val">00</div><div class="e2-stat-label">Filler Ingredients</div></div>
+        <div class="e2-stat"><div class="e2-stat-val">2026</div><div class="e2-stat-label">Established</div></div>
+        <div class="e2-stat"><div class="e2-stat-val">One</div><div class="e2-stat-label">Standard</div></div>
+      </div>
+
+      <div class="e2-footer">
+        <div><div class="e2-footer-logo">BYND</div><div class="e2-footer-copy">© 2026 BYND Grooming.<br>All rights reserved.</div></div>
+        <div class="e2-footer-col"><div class="e2-footer-col-title">Products</div><div class="e2-footer-link">Sea Salt Spray</div><div class="e2-footer-link">Curl Cream</div><div class="e2-footer-link">Matte Styling Clay</div><div class="e2-footer-link">Aftershave Cologne</div></div>
+        <div class="e2-footer-col"><div class="e2-footer-col-title">Company</div><div class="e2-footer-link">About</div><div class="e2-footer-link">Stockists</div><div class="e2-footer-link">Contact</div></div>
+      </div>
+    </div><!-- /site2 -->
+
+    <!-- ══ SITE 3: DROP (free scroll) ══ -->
+    <div id="site3">
+      <div id="s3-bar"></div>
+      <div id="s3-ct"><span id="s3-num">—</span> / 4</div>
+
+      <div class="s3-slide">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="s3-intro-logo">BYND</div>
+          <div class="s3-isub">Premium Grooming — Est. 2026</div>
+        </div>
+        <div class="s3-hint"><div class="s3-hline"></div>Scroll to explore<div class="s3-hline"></div></div>
+      </div>
+
+      <div class="s3-slide">
+        <div class="s3-svg-wrap"><svg width="160" height="300" viewBox="0 0 160 280" fill="none"><path d="M62 60L62 40Q62 30 72 30L110 30Q120 30 120 40L120 55" stroke="#c8c8c8" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="105" y="24" width="30" height="10" rx="5" fill="#9a9a9a"/><path d="M90 55Q100 55 105 65Q110 72 100 72L85 70Q76 68 76 60Z" fill="#6b6b6b"/><rect x="52" y="60" width="76" height="190" rx="10" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/><rect x="58" y="52" width="64" height="14" rx="6" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/><rect x="58" y="100" width="64" height="80" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/><text x="90" y="134" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text><text x="90" y="150" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2" fill="#6b6b6b">SEA SALT</text><line x1="90" y1="52" x2="90" y2="60" stroke="#3d3d3d" stroke-width="3"/><rect x="52" y="242" width="76" height="8" rx="4" fill="#111"/><rect x="56" y="65" width="8" height="160" rx="4" fill="#2a2a2a" opacity="0.4"/></svg></div>
+        <div class="s3-pname">Sea Salt<br>Spray</div><div class="s3-line"></div>
+        <div class="s3-pdesc">Atlantic sea minerals. Effortless texture. Lived-in waves without the crunch.</div>
+        <button class="s3-cta">$28 — Shop Now</button>
+      </div>
+
+      <div class="s3-slide">
+        <div class="s3-svg-wrap"><svg width="140" height="310" viewBox="0 0 140 300" fill="none"><rect x="58" y="10" width="24" height="50" rx="12" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/><rect x="46" y="24" width="48" height="16" rx="8" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/><rect x="88" y="28" width="22" height="8" rx="4" fill="#6b6b6b"/><rect x="50" y="56" width="40" height="16" rx="6" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/><rect x="28" y="68" width="84" height="208" rx="14" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/><rect x="34" y="110" width="72" height="90" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/><text x="70" y="148" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text><text x="70" y="166" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="7" letter-spacing="2" fill="#6b6b6b">CURL CREAM</text><rect x="32" y="73" width="8" height="180" rx="4" fill="#2a2a2a" opacity="0.5"/><rect x="28" y="268" width="84" height="8" rx="4" fill="#111"/></svg></div>
+        <div class="s3-pname">Curl<br>Cream</div><div class="s3-line"></div>
+        <div class="s3-pdesc">Define every curl pattern. No frizz, no flake. Flexible hold that moves with you.</div>
+        <button class="s3-cta">$32 — Shop Now</button>
+      </div>
+
+      <div class="s3-slide">
+        <div class="s3-svg-wrap"><svg width="240" height="180" viewBox="0 0 200 160" fill="none"><ellipse cx="100" cy="45" rx="85" ry="22" fill="#1a1a1a" stroke="#c8c8c8" stroke-width="1.5"/><path d="M15 45Q15 60 100 60Q185 60 185 45" fill="#111" stroke="#c8c8c8" stroke-width="1.5"/><ellipse cx="100" cy="45" rx="75" ry="17" fill="#0d0d0d" stroke="#2a2a2a" stroke-width="1"/><text x="100" y="49" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="20" letter-spacing="6" fill="#c8c8c8">BYND</text><path d="M15 45L15 100Q15 130 100 130Q185 130 185 100L185 45" fill="#141414" stroke="#c8c8c8" stroke-width="1.5"/><ellipse cx="100" cy="110" rx="85" ry="20" fill="#0f0f0f" stroke="#2a2a2a" stroke-width="1"/><text x="100" y="95" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" letter-spacing="3" fill="#6b6b6b">MATTE STYLING CLAY</text><path d="M25 50Q28 80 25 105" stroke="#2a2a2a" stroke-width="5" stroke-linecap="round" opacity="0.6"/></svg></div>
+        <div class="s3-pname">Matte<br>Styling Clay</div><div class="s3-line"></div>
+        <div class="s3-pdesc">Strong hold. Zero shine. Reworkable texture that lasts all day.</div>
+        <button class="s3-cta">$26 — Shop Now</button>
+      </div>
+
+      <div class="s3-slide">
+        <div class="s3-svg-wrap"><svg width="150" height="290" viewBox="0 0 140 260" fill="none"><rect x="52" y="6" width="36" height="28" rx="6" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/><rect x="62" y="30" width="16" height="22" rx="4" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/><rect x="48" y="50" width="44" height="12" rx="4" fill="#3d3d3d" stroke="#6b6b6b" stroke-width="0.5"/><rect x="28" y="60" width="84" height="178" rx="8" fill="#141414" stroke="#3d3d3d" stroke-width="1.5"/><rect x="34" y="66" width="72" height="166" rx="5" fill="none" stroke="#1f1f1f" stroke-width="1"/><rect x="34" y="100" width="72" height="90" rx="3" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/><text x="70" y="138" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" letter-spacing="6" fill="#c8c8c8">BYND</text><text x="70" y="157" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#6b6b6b">AFTERSHAVE</text><text x="70" y="172" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#6b6b6b">COLOGNE</text><rect x="32" y="65" width="6" height="170" rx="3" fill="#1f1f1f" opacity="0.6"/><rect x="28" y="230" width="84" height="8" rx="3" fill="#0f0f0f"/></svg></div>
+        <div class="s3-pname">Aftershave<br>Cologne</div><div class="s3-line"></div>
+        <div class="s3-pdesc">Cedar. Black pepper. Vetiver. Clean, sharp, built to last.</div>
+        <button class="s3-cta">$58 — Shop Now</button>
+      </div>
+
+    </div><!-- /site3 -->
+
+    <!-- ══ SITE 4: SHOP ══ -->
+    <div id="site4">
+      <div id="s4-hdr"><div class="s4-logo">BYND</div><nav class="s4-nav"><a href="#">Products</a><a href="#">About</a><a href="#">Stockists</a></nav><button class="s4-cart">Bag <div class="s4-cbadge" id="s4cc">0</div></button></div>
+      <div class="s4-hero">
+        <div class="s4-hl"><div class="s4-eye">Est. 2026 — Barber-Grade Grooming</div><div class="s4-htitle">Built for<br>the cut.</div><div class="s4-hbody">Four products. No filler. Every formula tested chair-side by working barbers—designed to perform under real conditions for real clients.</div><div class="s4-hcta">Shop All Products</div></div>
+        <div class="s4-hr"><div class="s4-hr-word">BYND</div></div>
+      </div>
+      <div class="s4-slabel"><div class="s4-stitle">The Collection</div><div class="s4-scount">4 Products</div></div>
+      <div class="s4-grid">
+        <div class="s4-item"><div class="s4-iimg"><svg width="100" height="190" viewBox="0 0 160 280" fill="none"><path d="M62 60L62 40Q62 30 72 30L110 30Q120 30 120 40L120 55" stroke="#c8c8c8" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="105" y="24" width="30" height="10" rx="5" fill="#9a9a9a"/><path d="M90 55Q100 55 105 65Q110 72 100 72L85 70Q76 68 76 60Z" fill="#6b6b6b"/><rect x="52" y="60" width="76" height="190" rx="10" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/><rect x="58" y="52" width="64" height="14" rx="6" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/><rect x="58" y="100" width="64" height="80" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/><text x="90" y="134" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text><text x="90" y="150" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2" fill="#6b6b6b">SEA SALT</text><line x1="90" y1="52" x2="90" y2="60" stroke="#3d3d3d" stroke-width="3"/><rect x="52" y="242" width="76" height="8" rx="4" fill="#111"/></svg></div><div class="s4-ibody"><div class="s4-icat">Hair Care</div><div class="s4-iname">Sea Salt Spray</div><div class="s4-idesc">Atlantic sea minerals for effortless texture and wave definition. Lightweight, non-sticky hold for all hair types.</div><div class="s4-ifoot"><div><div class="s4-iprice">$28</div><div class="s4-isize">200ml</div></div><button class="s4-add" onclick="s4Add(this)">Add to Bag</button></div></div></div>
+        <div class="s4-item"><div class="s4-iimg"><svg width="80" height="200" viewBox="0 0 140 300" fill="none"><rect x="58" y="10" width="24" height="50" rx="12" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/><rect x="46" y="24" width="48" height="16" rx="8" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/><rect x="88" y="28" width="22" height="8" rx="4" fill="#6b6b6b"/><rect x="50" y="56" width="40" height="16" rx="6" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/><rect x="28" y="68" width="84" height="208" rx="14" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/><rect x="34" y="110" width="72" height="90" rx="4" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/><text x="70" y="148" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="14" letter-spacing="4" fill="#c8c8c8">BYND</text><text x="70" y="166" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="7" letter-spacing="2" fill="#6b6b6b">CURL CREAM</text><rect x="32" y="73" width="8" height="180" rx="4" fill="#2a2a2a" opacity="0.5"/><rect x="28" y="268" width="84" height="8" rx="4" fill="#111"/></svg></div><div class="s4-ibody"><div class="s4-icat">Curl Care</div><div class="s4-iname">Curl Cream</div><div class="s4-idesc">Defines every curl pattern from loose wave to tight coil. No frizz, no flaking—smooth, hydrated curls with flexible hold.</div><div class="s4-ifoot"><div><div class="s4-iprice">$32</div><div class="s4-isize">150ml</div></div><button class="s4-add" onclick="s4Add(this)">Add to Bag</button></div></div></div>
+        <div class="s4-item"><div class="s4-iimg"><svg width="170" height="130" viewBox="0 0 200 160" fill="none"><ellipse cx="100" cy="45" rx="85" ry="22" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1.5"/><path d="M15 45Q15 60 100 60Q185 60 185 45" fill="#111" stroke="#3d3d3d" stroke-width="1.5"/><ellipse cx="100" cy="45" rx="75" ry="17" fill="#0d0d0d" stroke="#2a2a2a" stroke-width="1"/><text x="100" y="49" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="20" letter-spacing="6" fill="#c8c8c8">BYND</text><path d="M15 45L15 100Q15 130 100 130Q185 130 185 100L185 45" fill="#141414" stroke="#3d3d3d" stroke-width="1.5"/><ellipse cx="100" cy="110" rx="85" ry="20" fill="#0f0f0f" stroke="#2a2a2a" stroke-width="1"/><text x="100" y="95" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="9" letter-spacing="3" fill="#6b6b6b">MATTE STYLING CLAY</text></svg></div><div class="s4-ibody"><div class="s4-icat">Styling</div><div class="s4-iname">Matte Styling Clay</div><div class="s4-idesc">Strong hold, zero shine. Reworkable throughout the day. Builds texture without stiffness.</div><div class="s4-ifoot"><div><div class="s4-iprice">$26</div><div class="s4-isize">100g</div></div><button class="s4-add" onclick="s4Add(this)">Add to Bag</button></div></div></div>
+        <div class="s4-item"><div class="s4-iimg"><svg width="80" height="190" viewBox="0 0 140 260" fill="none"><rect x="52" y="6" width="36" height="28" rx="6" fill="#2a2a2a" stroke="#3d3d3d" stroke-width="1"/><rect x="62" y="30" width="16" height="22" rx="4" fill="#1a1a1a" stroke="#3d3d3d" stroke-width="1"/><rect x="48" y="50" width="44" height="12" rx="4" fill="#3d3d3d" stroke="#6b6b6b" stroke-width="0.5"/><rect x="28" y="60" width="84" height="178" rx="8" fill="#141414" stroke="#3d3d3d" stroke-width="1.5"/><rect x="34" y="66" width="72" height="166" rx="5" fill="none" stroke="#1f1f1f" stroke-width="1"/><rect x="34" y="100" width="72" height="90" rx="3" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/><text x="70" y="138" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" letter-spacing="6" fill="#c8c8c8">BYND</text><text x="70" y="157" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#6b6b6b">AFTERSHAVE</text><text x="70" y="172" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="8" letter-spacing="2.5" fill="#6b6b6b">COLOGNE</text><rect x="32" y="65" width="6" height="170" rx="3" fill="#1f1f1f" opacity="0.6"/><rect x="28" y="230" width="84" height="8" rx="3" fill="#0f0f0f"/></svg></div><div class="s4-ibody"><div class="s4-icat">Grooming</div><div class="s4-iname">Aftershave Cologne</div><div class="s4-idesc">Cedar, black pepper, and vetiver. Soothes the skin after a close shave while leaving a clean, long-lasting scent.</div><div class="s4-ifoot"><div><div class="s4-iprice">$58</div><div class="s4-isize">50ml</div></div><button class="s4-add" onclick="s4Add(this)">Add to Bag</button></div></div></div>
+      </div>
+      <div class="s4-bstrip"><div class="s4-bc"><div class="s4-bnum">04</div><div class="s4-blab">Products</div><div class="s4-bval">Four essentials. Nothing extra. Built for the barber chair and the bathroom shelf.</div></div><div class="s4-bc"><div class="s4-bnum">00</div><div class="s4-blab">Filler Ingredients</div><div class="s4-bval">Every formula is clean, purposeful, and made to perform—not to impress on paper.</div></div><div class="s4-bc"><div class="s4-bnum">'26</div><div class="s4-blab">Est.</div><div class="s4-bval">Born in the shop. Built for the street. BYND started where good grooming starts—the chair.</div></div></div>
+      <div class="s4-footer"><div><div class="s4-flogo">BYND</div><div class="s4-ftag">Premium grooming for the modern man. Est. 2026.</div></div><div><div class="s4-fct">Products</div><div class="s4-flinks"><div class="s4-flink">Sea Salt Spray</div><div class="s4-flink">Curl Cream</div><div class="s4-flink">Matte Styling Clay</div><div class="s4-flink">Aftershave Cologne</div></div></div><div><div class="s4-fct">Company</div><div class="s4-flinks"><div class="s4-flink">About</div><div class="s4-flink">Stockists</div><div class="s4-flink">Contact</div></div></div></div>
+      <div class="s4-fbot"><div class="s4-fcopy">© 2026 BYND Grooming. All rights reserved.</div><div class="s4-fcopy">Privacy · Terms</div></div>
+    </div><!-- /site4 -->
+
+  </div>
+</div>
+</div>
+
+<script>
+let cur = null, s4ct = 0;
+
+function openSite(n) {
+  document.getElementById('hub').classList.add('hidden');
+  document.getElementById('frame').classList.add('visible');
+  const nm = {1:'The Reveal',2:'Editorial',3:'Drop',4:'Shop'};
+  document.getElementById('ftitle').textContent = 'BYND — ' + nm[n];
+  if (cur) { const p = document.getElementById('site'+cur); p.classList.remove('active'); p.style.display='none'; }
+  cur = n;
+  const s = document.getElementById('site'+n);
+  s.style.display = 'block';
+  s.scrollTop = 0;
+  setTimeout(() => s.classList.add('active'), 10);
+  if (n === 3) initS3(s);
+}
+
+function closeFrame() {
+  document.getElementById('hub').classList.remove('hidden');
+  document.getElementById('frame').classList.remove('visible');
+  if (cur) { const s = document.getElementById('site'+cur); s.classList.remove('active'); setTimeout(()=>{ s.style.display='none'; },500); }
+  cur = null;
+}
+
+/* ── SITE 1: Reveal — IntersectionObserver driven ── */
+(function(){
+  const sections = [
+    { sec:'rs1', num:'rn1', div:'rd1', bot:'rb1', nw:'rnw1', cw:'rcw1' },
+    { sec:'rs2', num:'rn2', div:'rd2', bot:'rb2', nw:'rnw2', cw:'rcw2' },
+    { sec:'rs3', num:'rn3', div:'rd3', bot:'rb3', nw:'rnw3', cw:'rcw3' },
+    { sec:'rs4', num:'rn4', div:'rd4', bot:'rb4', nw:'rnw4', cw:'rcw4' },
+  ];
+
+  // Scroll listener for the reveal site — updates all element positions
+  function onRevealScroll() {
+    const site = document.getElementById('site1');
+    if (!site) return;
+    const st   = site.scrollTop;
+    const tot  = site.scrollHeight - site.clientHeight;
+    const pGlobal = tot > 0 ? st / tot : 0;
+
+    // progress bar
+    document.getElementById('r-bar-fill').style.height = (pGlobal * 100) + '%';
+
+    const vh = site.clientHeight;
+
+    sections.forEach((s, idx) => {
+      const sec = document.getElementById(s.sec);
+      if (!sec) return;
+
+      // Position of this section's sticky top relative to scroll
+      const secTop   = sec.offsetTop;
+      const secBot   = secTop + sec.offsetHeight;
+      // How far into this section we are (0 = just entered, 1 = about to leave)
+      const raw      = (st - secTop) / (sec.offsetHeight - vh);
+      const local    = Math.min(Math.max(raw, 0), 1);
+
+      const num  = document.getElementById(s.num);
+      const div  = document.getElementById(s.div);
+      const bot  = document.getElementById(s.bot);
+      const nw   = document.getElementById(s.nw);
+      const cw   = document.getElementById(s.cw);
+
+      if (!num) return;
+
+      // Is this section visible at all?
+      const visible = st >= secTop - vh && st <= secBot;
+      if (!visible) {
+        // Reset all to hidden state
+        [num, div, bot, nw, cw].forEach(el => { if(el){ el.style.opacity='0'; } });
+        if(div) div.style.transform='scaleX(0)';
+        if(bot) bot.style.transform='scale(0.6)';
+        if(nw)  nw.style.transform='translateY(-50%) translateX(-60px)';
+        if(cw)  cw.style.transform='translateY(-50%) translateX(60px)';
+        return;
+      }
+
+      function clamp(v,a,b){ return Math.min(Math.max(v,a),b); }
+      function map(v,a,b,c,d){ return c+(d-c)*clamp((v-a)/(b-a),0,1); }
+      function ease(t){ return t<.5?2*t*t:(4-2*t)*t-1; }
+
+      // Phase 1 (local 0→0.35): everything reveals in
+      // Phase 2 (local 0.35→0.65): hold
+      // Phase 3 (local 0.65→1): fade out as next section takes over
+
+      const inT  = ease(clamp(map(local, 0, 0.35), 0, 1));
+      const outT = ease(clamp(map(local, 0.70, 1.0), 0, 1));
+      const alpha = inT * (1 - outT);
+
+      // Bg number: fades in large, slight upward drift
+      num.style.opacity   = String(clamp(inT * 0.18, 0, 0.18)); // stays dim
+      num.style.transform = `translateY(${map(inT,0,1,20,0)}px) translateX(-50%)`;
+      num.style.left      = '50%';
+
+      // Divider line wipes in
+      div.style.transform  = `scaleX(${inT})`;
+      div.style.opacity    = String(alpha);
+
+      // Bottle scales up from small, fades out when done
+      const bottleScale = map(ease(clamp(map(local, 0, 0.3), 0, 1)), 0, 1, 0.55, 1.0);
+      bot.style.transform  = `scale(${bottleScale})`;
+      bot.style.opacity    = String(alpha);
+
+      // Name slides in from left
+      const nwX = map(inT, 0, 1, -60, 0) - map(outT, 0, 1, 0, -40);
+      nw.style.transform   = `translateY(-50%) translateX(${nwX}px)`;
+      nw.style.opacity     = String(alpha);
+
+      // Copy slides in from right
+      const cwX = map(inT, 0, 1, 60, 0) - map(outT, 0, 1, 0, 40);
+      cw.style.transform   = `translateY(-50%) translateX(${cwX}px)`;
+      cw.style.opacity     = String(alpha);
+    });
+  }
+
+  // Wire up once site1 is shown
+  const origOpen = window.openSite || function(){};
+  window.openSite = function(n) {
+    origOpen(n);
+    if (n === 1) {
+      const site = document.getElementById('site1');
+      // Remove any old listener by cloning — simplest approach
+      const fresh = site.cloneNode(true);
+      site.parentNode.replaceChild(fresh, site);
+      // Re-attach
+      fresh.style.display = 'block';
+      fresh.scrollTop = 0;
+      setTimeout(() => fresh.classList.add('active'), 10);
+      fresh.addEventListener('scroll', onRevealScroll, { passive: true });
+      // Also fire once immediately
+      setTimeout(onRevealScroll, 50);
+    }
+  };
+})();
+
+/* ── SITE 3: Drop — free scroll progress bar ── */
+function initS3(site) {
+  site.scrollTop = 0;
+  const bar = document.getElementById('s3-bar');
+  const num = document.getElementById('s3-num');
+  const slides = site.querySelectorAll('.s3-slide');
+  const slideH = site.clientHeight;
+  site.addEventListener('scroll', function() {
+    const st  = site.scrollTop;
+    const tot = site.scrollHeight - site.clientHeight;
+    const p   = tot > 0 ? st / tot : 0;
+    bar.style.width = (p * 100) + '%';
+    const idx = Math.round(st / slideH);
+    num.textContent = idx === 0 ? '—' : idx;
+  }, { passive: true });
+}
+
+/* ── SITE 4 ── */
+function s4Add(btn) {
+  if (btn.classList.contains('added')) return;
+  btn.classList.add('added'); btn.textContent = '✓ Added'; s4ct++;
+  document.getElementById('s4cc').textContent = s4ct;
+  setTimeout(() => { btn.classList.remove('added'); btn.textContent = 'Add to Bag'; }, 2200);
+}
+</script>
+</body>
+</html>
